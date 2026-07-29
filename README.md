@@ -4,6 +4,12 @@
 
 This project is intentionally **backend-first** Movie booking system it demonstrates the engineering practices used to build reliable, production-ready booking systems.
 
+## Implementation status
+
+The API, PostgreSQL migration, seed data, expiry worker, unit tests, concurrency integration test, and CineLoop recruiter frontend are included. Start with the [local runbook](docs/operations/local-runbook.md), then read the [system overview](docs/architecture/system-overview.md).
+
+Concept explainers live in [docs/concepts](docs/concepts), and recruiter interview notes live in [docs/interview](docs/interview).
+
 ### Key Concepts Demonstrated
 
 - 🔒 ACID Transactions
@@ -258,7 +264,19 @@ GET /bookings/me
 
 ```
 POST /payments/mock/confirm
+
+POST /payments/mock/process
+{
+  "bookingId": "uuid",
+  "method": "UPI | CARD | WALLET",
+  "outcome": "SUCCEEDED | FAILED"
+}
 ```
+
+The mock process route supports declined attempts and safe retries. A decline records
+the failed attempt while the booking remains `PENDING_PAYMENT` and its seats remain
+`HELD`. A successful retry atomically changes payment, booking, and seat inventory
+to `SUCCEEDED`, `CONFIRMED`, and `BOOKED`.
 
 ---
 
@@ -382,6 +400,31 @@ npx prisma migrate dev
 ```bash
 npm run dev
 ```
+
+---
+
+## Start the CineLoop Frontend
+
+Use Node.js 22.13 or newer in a second terminal:
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Open `http://localhost:4173`.
+
+When the Express API is running at `http://127.0.0.1:3000`, CineLoop automatically uses the real PostgreSQL-backed booking flows. When the API is unavailable, it switches to a clearly labelled interactive demo mode so the portfolio can still be explored.
+
+The seeded live admin credentials are:
+
+```text
+admin@cinema.local
+ChangeMe123!
+```
+
+The frontend demonstrates movie discovery, showtimes, live seat status, expiring holds, mock payment confirmation, booking cancellation, admin setup workflows, and a visual two-request concurrency race.
 
 ---
 

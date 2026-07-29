@@ -5,14 +5,22 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "dev:worker": "tsx watch src/worker.ts",
+    "dev:web": "npm --prefix web run dev",
+    "dev:all": "concurrently --kill-others --names api,worker,web --prefix-colors cyan,magenta,yellow \"npm:dev\" \"npm:dev:worker\" \"npm:dev:web\"",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js",
+    "build:web": "npm --prefix web run build",
+    "start": "node dist/src/server.js",
+    "start:worker": "node dist/src/worker.js",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --config vitest.config.ts",
+    "test:web": "npm --prefix web test",
     "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "prisma:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
@@ -27,10 +35,13 @@
     "@types/express": "^5.0.0",
     "@types/jsonwebtoken": "^9.0.0",
     "@types/node": "^22.0.0",
+    "concurrently": "9.2.1",
     "prisma": "^6.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0",
     "vitest": "^2.0.0"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }
-
