@@ -14,8 +14,15 @@ export const app = express();
 
 const requestLogger = pinoHttp as unknown as (options: {
   genReqId: (request: IncomingMessage) => string | undefined;
+  redact: { paths: string[]; censor: string };
 }) => express.RequestHandler;
-app.use(requestLogger({ genReqId: (req) => req.headers["x-request-id"]?.toString() }));
+app.use(requestLogger({
+  genReqId: (req) => req.headers["x-request-id"]?.toString(),
+  redact: {
+    paths: ["req.headers.authorization", "req.headers.cookie"],
+    censor: "[REDACTED]",
+  },
+}));
 app.use((req, res, next) => {
   const origin = req.header("origin");
   const isLocalFrontend = origin && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);

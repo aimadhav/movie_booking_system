@@ -124,11 +124,12 @@ export function CinemaApp() {
 
   useEffect(() => {
     const stored = window.localStorage.getItem(SESSION_KEY);
+    let storedSession: { user: User; token: string } | null = null;
     if (stored) {
       try {
-        const session = JSON.parse(stored) as { user: User; token: string };
-        setUser(session.user);
-        setToken(session.token);
+        storedSession = JSON.parse(stored) as { user: User; token: string };
+        setUser(storedSession.user);
+        setToken(storedSession.token);
       } catch {
         window.localStorage.removeItem(SESSION_KEY);
       }
@@ -151,6 +152,23 @@ export function CinemaApp() {
           }
         }
         setMode("live");
+
+        if (storedSession) {
+          try {
+            const currentUser = await cinemaApi.session(storedSession.token);
+            setUser(currentUser);
+          } catch (error) {
+            if (error instanceof CinemaApiError && error.status === 401) {
+              setUser(null);
+              setToken("");
+              setBookings([]);
+              window.localStorage.removeItem(SESSION_KEY);
+              setAuthMode("login");
+              setAuthOpen(true);
+              setNotice("Your session expired. Sign in again to continue.");
+            }
+          }
+        }
       } catch {
         setMode("demo");
       }
@@ -204,12 +222,26 @@ export function CinemaApp() {
     window.localStorage.setItem(SESSION_KEY, JSON.stringify({ user: nextUser, token: nextToken }));
   };
 
-  const signOut = () => {
+  const clearSession = () => {
     setUser(null);
     setToken("");
     setBookings([]);
     window.localStorage.removeItem(SESSION_KEY);
+  };
+
+  const signOut = () => {
+    clearSession();
     setNotice("You have been signed out.");
+  };
+
+  const handleSessionFailure = (error: unknown) => {
+    if (!(error instanceof CinemaApiError) || error.status !== 401) return false;
+    clearSession();
+    setAuthMode("login");
+    setAuthOpen(true);
+    setAdminMessage("");
+    setNotice("Your access token expired or is no longer valid. Sign in again to continue.");
+    return true;
   };
 
   const openMovie = async (movie: Movie) => {
@@ -286,7 +318,7 @@ export function CinemaApp() {
       setView("checkout");
       setNotice(`Seats held for ${countdownLabel(booking.expiresAt, Date.now())} minutes.`);
     } catch (error) {
-      setNotice(getErrorMessage(error));
+      if (!handleSessionFailure(error)) setNotice(getErrorMessage(error));
       if (isLiveFlow) {
         try {
           setSeatMap(await cinemaApi.seatMap(selectedShowtime.id));
@@ -365,7 +397,7 @@ export function CinemaApp() {
       setNotice("Payment succeeded. The booking and seats are now confirmed.");
     } catch (error) {
       setPaymentStage("failed");
-      setNotice(getErrorMessage(error));
+      if (!handleSessionFailure(error)) setNotice(getErrorMessage(error));
     } finally {
       setBusy(false);
     }
@@ -379,7 +411,7 @@ export function CinemaApp() {
       const result = await cinemaApi.bookings(token);
       setBookings(result.items);
     } catch (error) {
-      setNotice(getErrorMessage(error));
+      if (!handleSessionFailure(error)) setNotice(getErrorMessage(error));
     }
   };
 
@@ -394,7 +426,7 @@ export function CinemaApp() {
       setBookings((current) => current.map((item) => (item.id === booking.id ? cancelled : item)));
       setNotice("Booking cancelled and seats released.");
     } catch (error) {
-      setNotice(getErrorMessage(error));
+      if (!handleSessionFailure(error)) setNotice(getErrorMessage(error));
     } finally {
       setBusy(false);
     }
@@ -453,7 +485,7 @@ export function CinemaApp() {
       setMovies((current) => [enriched, ...current]);
       setAdminMessage(`${created.title} was added to the catalogue.`);
     } catch (error) {
-      setAdminMessage(getErrorMessage(error));
+      if (!handleSessionFailure(error)) setAdminMessage(getErrorMessage(error));
     } finally {
       setBusy(false);
     }
@@ -491,7 +523,7 @@ export function CinemaApp() {
         `${venueForm.theaterName} / ${venueForm.screenName} is ready with ${venueForm.rows * venueForm.seatsPerRow} seats and a scheduled showtime.`,
       );
     } catch (error) {
-      setAdminMessage(getErrorMessage(error));
+      if (!handleSessionFailure(error)) setAdminMessage(getErrorMessage(error));
     } finally {
       setBusy(false);
     }
@@ -528,6 +560,13 @@ export function CinemaApp() {
           cinemaApi.reserve(token, targetShowtime.id, [targetSeat.id], `race-a-${crypto.randomUUID()}`),
           cinemaApi.reserve(token, targetShowtime.id, [targetSeat.id], `race-b-${crypto.randomUUID()}`),
         ]);
+        const authenticationFailure = results.find(
+          (result) =>
+            result.status === "rejected" &&
+            result.reason instanceof CinemaApiError &&
+            result.reason.status === 401,
+        );
+        if (authenticationFailure?.status === "rejected") throw authenticationFailure.reason;
         setConcurrencyResults(
           results.map((result, index) =>
             result.status === "fulfilled"
@@ -551,7 +590,11 @@ export function CinemaApp() {
         ]);
       }
     } catch (error) {
-      setConcurrencyResults([{ label: "Demo", state: "lost", detail: getErrorMessage(error) }]);
+      if (!handleSessionFailure(error)) {
+        setConcurrencyResults([{ label: "Demo", state: "lost", detail: getErrorMessage(error) }]);
+      } else {
+        setConcurrencyResults([]);
+      }
     } finally {
       setConcurrencyBusy(false);
     }

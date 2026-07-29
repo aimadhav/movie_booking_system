@@ -8,6 +8,7 @@ import type {
   PaymentMethod,
   SeatMap,
   Showtime,
+  User,
 } from "./types";
 
 const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:3000").replace(/\/$/, "");
@@ -86,6 +87,10 @@ export const cinemaApi = {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
+  },
+
+  session(token: string) {
+    return request<User>("/auth/me", { token });
   },
 
   bookings(token: string) {

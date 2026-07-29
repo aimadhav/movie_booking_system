@@ -17,6 +17,14 @@ const createToken = (user: { id: string; role: UserRole }) =>
   jwt.sign({ role: user.role }, env.JWT_SECRET, { subject: user.id, expiresIn: "15m" });
 
 export const authService = {
+  async getCurrentUser(userId: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new ApiError(401, "INVALID_TOKEN", "The access token no longer belongs to an active user.");
+    }
+    return publicUser(user);
+  },
+
   async register(input: { email: string; password: string }) {
     const existing = await prisma.user.findUnique({ where: { email: input.email } });
     if (existing) {

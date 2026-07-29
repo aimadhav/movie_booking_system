@@ -230,7 +230,13 @@ Foreign keys and unique constraints enforce correctness at the database level.
 POST /auth/register
 
 POST /auth/login
+
+GET /auth/me
 ```
+
+The frontend validates cached access tokens with `/auth/me` when it starts.
+Expired sessions are removed and require a fresh sign-in instead of leaving the
+interface in a misleading authenticated state.
 
 ---
 
