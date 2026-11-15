@@ -1,6 +1,8 @@
 # CineLoop Frontend
 
-CineLoop is the recruiter-facing visual demo for the movie booking backend. It uses original branding and a premium cinema-discovery interface inspired by modern ticketing products.
+CineLoop is the visual demo for the movie booking backend. The interface takes inspiration from American cinema sites with a dark film-first layout, original movie artwork, clear showtimes, and reserved-seat checkout. It retains Bengaluru locations, INR pricing, and the existing API contract.
+
+The home page includes a featured-film carousel, now-showing and coming-soon collections, genre/title search, a theater directory, and a cinema experience section. Coming-soon films are explicitly previews and have no bookable showtimes. Date selection filters the actual loaded showtime inventory.
 
 ## What it demonstrates
 
@@ -46,9 +48,13 @@ The seeded admin account is `admin@cinema.local` with password `ChangeMe123!`.
 
 ## Validation
 
+The payment failure experiments are available at `/payment-lab` and from System design lab. Live mode uses authenticated admin-only development endpoints backed by PostgreSQL. Offline mode is an explicitly labelled simulation. The interruption scenario stores an event without processing it: restart the API, restore the saved run ID, then process or replay the event. The late-payment scenario records a compensation requirement without issuing a real refund.
+
 ```powershell
 npm run build
 npm test
 ```
 
-The social preview is stored at `public/og.png`. It was generated specifically for CineLoop and contains no third-party cinema branding or copyrighted movie artwork.
+Social previews use the original featured-film artwork at `public/images/last-orbit.webp`.
+
+Original fictional-film artwork lives in `public/images/`. The five WebP assets total less than 1 MB. Titles and poster typography are rendered by the interface. These are sample films, not real theatrical releases.

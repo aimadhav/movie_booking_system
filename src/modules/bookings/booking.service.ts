@@ -2,6 +2,7 @@ import { BookingStatus, Prisma, ShowtimeSeatStatus, ShowtimeStatus } from "@pris
 
 import { env } from "../../config/env.js";
 import { prisma } from "../../lib/prisma.js";
+import { runSerializable } from "../../lib/transaction.js";
 import { lockingRepository } from "../../repositories/locking.repository.js";
 import { ApiError } from "../../utils/api-error.js";
 import { assertBookingTransition } from "./booking-state.js";
@@ -43,24 +44,6 @@ const serializeBooking = (booking: any) => ({
   })),
 });
 
-const isSerializationFailure = (error: unknown) =>
-  error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034";
-
-const runSerializable = async <Result>(work: (tx: Prisma.TransactionClient) => Promise<Result>) => {
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      return await prisma.$transaction(work, {
-        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-        maxWait: 5_000,
-        timeout: 10_000,
-      });
-    } catch (error) {
-      if (!isSerializationFailure(error) || attempt === 2) throw error;
-    }
-  }
-  throw new Error("Transaction retry limit reached.");
-};
-
 const releasePendingBooking = async (tx: Prisma.TransactionClient, bookingId: string, status: BookingStatus) => {
   const booking = await tx.booking.findUnique({ where: { id: bookingId } });
   if (!booking) throw new ApiError(404, "BOOKING_NOT_FOUND", "Booking was not found.");
@@ -83,7 +66,13 @@ export const bookingService = {
         where: { userId_idempotencyKey: { userId: input.userId, idempotencyKey: input.idempotencyKey } },
         include: bookingInclude,
       });
-      if (existing) return existing;
+      if (existing) {
+        const originalSeats = existing.seats.map((seat) => seat.seatId).sort();
+        if (existing.showtimeId !== input.showtimeId || JSON.stringify(originalSeats) !== JSON.stringify(seatIds)) {
+          throw new ApiError(409, "IDEMPOTENCY_KEY_REUSED", "This key already identifies a different reservation.");
+        }
+        return existing;
+      }
 
       const showtime = await tx.showtime.findUnique({ where: { id: input.showtimeId } });
       if (!showtime || showtime.status !== ShowtimeStatus.SCHEDULED) {

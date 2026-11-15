@@ -1,6 +1,7 @@
-import { BookingStatus, PaymentMethod, PaymentStatus, Prisma, ShowtimeSeatStatus } from "@prisma/client";
+import { BookingStatus, PaymentMethod, PaymentStatus, ShowtimeSeatStatus } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma.js";
+import { runSerializable } from "../../lib/transaction.js";
 import { lockingRepository } from "../../repositories/locking.repository.js";
 import { ApiError } from "../../utils/api-error.js";
 import { createReference } from "../../utils/ids.js";
@@ -9,24 +10,6 @@ import { assertBookingTransition } from "../bookings/booking-state.js";
 const paymentInclude = { booking: { select: { userId: true } } } as const;
 
 type MockPaymentOutcome = "SUCCEEDED" | "FAILED";
-
-const isSerializationFailure = (error: unknown) =>
-  error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034";
-
-const runSerializable = async <Result>(work: (tx: Prisma.TransactionClient) => Promise<Result>) => {
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      return await prisma.$transaction(work, {
-        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-        maxWait: 5_000,
-        timeout: 10_000,
-      });
-    } catch (error) {
-      if (!isSerializationFailure(error) || attempt === 2) throw error;
-    }
-  }
-  throw new Error("Transaction retry limit reached.");
-};
 
 const serializePayment = (payment: {
   id: string;

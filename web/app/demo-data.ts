@@ -1,10 +1,18 @@
-import type { Booking, Movie, SeatMap, Showtime, ShowtimeSeat, Theater } from "./types";
+import type {
+  Booking,
+  Movie,
+  SeatMap,
+  Showtime,
+  ShowtimeSeat,
+  Theater,
+} from "./types";
 
 export const demoMovies: Movie[] = [
   {
     id: "00000000-0000-4000-8000-000000000001",
     title: "The Last Orbit",
-    description: "A crew races to return home after a deep-space mission fractures time around them.",
+    description:
+      "A crew races to return home after a deep-space mission fractures time around them.",
     durationMin: 128,
     rating: "UA 13+",
     genre: "Sci-fi · Thriller",
@@ -17,7 +25,8 @@ export const demoMovies: Movie[] = [
   {
     id: "00000000-0000-4000-8000-000000000002",
     title: "Monsoon Signal",
-    description: "Two radio hosts follow a mysterious broadcast through a rain-soaked coastal city.",
+    description:
+      "Two radio hosts follow a mysterious broadcast through a rain-soaked coastal city.",
     durationMin: 116,
     rating: "UA 16+",
     genre: "Mystery · Drama",
@@ -30,7 +39,8 @@ export const demoMovies: Movie[] = [
   {
     id: "00000000-0000-4000-8000-000000000003",
     title: "Paper Kingdom",
-    description: "A young illustrator discovers that every city she draws exists for exactly one night.",
+    description:
+      "A young illustrator discovers that every city she draws exists for exactly one night.",
     durationMin: 104,
     rating: "U",
     genre: "Fantasy · Family",
@@ -43,7 +53,8 @@ export const demoMovies: Movie[] = [
   {
     id: "00000000-0000-4000-8000-000000000004",
     title: "City After Dark",
-    description: "An off-duty detective has one night to stop a heist moving through Bengaluru.",
+    description:
+      "An off-duty detective has one night to stop a heist moving through Bengaluru.",
     durationMin: 142,
     rating: "A",
     genre: "Action · Crime",
@@ -56,7 +67,8 @@ export const demoMovies: Movie[] = [
   {
     id: "00000000-0000-4000-8000-000000000005",
     title: "7:42 to Mysuru",
-    description: "Four strangers miss the last train and find an unexpected route home.",
+    description:
+      "Four strangers miss the last train and find an unexpected route home.",
     durationMin: 98,
     rating: "U",
     genre: "Comedy · Romance",
@@ -65,6 +77,48 @@ export const demoMovies: Movie[] = [
     votes: "7.2K",
     posterTone: 5,
     badge: "NEW RELEASE",
+  },
+];
+
+export const comingSoonMovies: Movie[] = [
+  {
+    id: "coming-1",
+    title: "Beyond the Blue",
+    description:
+      "A cartographer follows an impossible constellation to the edge of the known universe. An original CineLoop preview film.",
+    durationMin: 132,
+    rating: "UA 13+",
+    genre: "Sci-fi · Adventure",
+    language: "English",
+    score: 8.8,
+    posterTone: 1,
+    badge: "COMING SOON",
+  },
+  {
+    id: "coming-2",
+    title: "The Folding Sky",
+    description:
+      "A young dreamer discovers a city in the clouds, where every wish begins as a folded piece of paper. An original CineLoop preview film.",
+    durationMin: 108,
+    rating: "U",
+    genre: "Fantasy · Family",
+    language: "Hindi",
+    score: 8.6,
+    posterTone: 3,
+    badge: "COMING SOON",
+  },
+  {
+    id: "coming-3",
+    title: "One More Summer",
+    description:
+      "An unexpected train journey reunites two friends and changes the direction of their lives. An original CineLoop preview film.",
+    durationMin: 112,
+    rating: "U",
+    genre: "Comedy · Romance",
+    language: "Kannada",
+    score: 8.4,
+    posterTone: 5,
+    badge: "COMING SOON",
   },
 ];
 
@@ -98,12 +152,54 @@ const futureAt = (dayOffset: number, hour: number, minute = 0) => {
 
 export const makeDemoShowtimes = (movie = demoMovies[0]): Showtime[] =>
   [
-    { theater: demoTheaters[0], screenName: "Screen 1", day: 1, hour: 10, minute: 30, price: 24900 },
-    { theater: demoTheaters[0], screenName: "Screen 1", day: 1, hour: 14, minute: 15, price: 29900 },
-    { theater: demoTheaters[0], screenName: "Screen 2", day: 1, hour: 19, minute: 40, price: 34900 },
-    { theater: demoTheaters[1], screenName: "Luxe 3", day: 1, hour: 12, minute: 5, price: 39900 },
-    { theater: demoTheaters[1], screenName: "Luxe 3", day: 2, hour: 17, minute: 20, price: 44900 },
-    { theater: demoTheaters[2], screenName: "Audi 5", day: 2, hour: 21, minute: 10, price: 32900 },
+    {
+      theater: demoTheaters[0],
+      screenName: "Screen 1",
+      day: 1,
+      hour: 10,
+      minute: 30,
+      price: 24900,
+    },
+    {
+      theater: demoTheaters[0],
+      screenName: "Screen 1",
+      day: 1,
+      hour: 14,
+      minute: 15,
+      price: 29900,
+    },
+    {
+      theater: demoTheaters[0],
+      screenName: "Screen 2",
+      day: 1,
+      hour: 19,
+      minute: 40,
+      price: 34900,
+    },
+    {
+      theater: demoTheaters[1],
+      screenName: "Luxe 3",
+      day: 1,
+      hour: 12,
+      minute: 5,
+      price: 39900,
+    },
+    {
+      theater: demoTheaters[1],
+      screenName: "Luxe 3",
+      day: 2,
+      hour: 17,
+      minute: 20,
+      price: 44900,
+    },
+    {
+      theater: demoTheaters[2],
+      screenName: "Audi 5",
+      day: 2,
+      hour: 21,
+      minute: 10,
+      price: 32900,
+    },
   ].map((slot, index) => ({
     id: `20000000-0000-4000-8000-${String(movie.posterTone ?? 1).padStart(6, "0")}${String(index + 1).padStart(6, "0")}`,
     movieId: movie.id,
@@ -120,8 +216,10 @@ export const makeDemoShowtimes = (movie = demoMovies[0]): Showtime[] =>
   }));
 
 const seatStatus = (row: string, number: number): ShowtimeSeat["status"] => {
-  if ((row === "B" && [3, 4].includes(number)) || (row === "E" && number === 8)) return "BOOKED";
-  if ((row === "C" && [6, 7].includes(number)) || (row === "D" && number === 2)) return "HELD";
+  if ((row === "B" && [3, 4].includes(number)) || (row === "E" && number === 8))
+    return "BOOKED";
+  if ((row === "C" && [6, 7].includes(number)) || (row === "D" && number === 2))
+    return "HELD";
   return "AVAILABLE";
 };
 
@@ -139,7 +237,12 @@ export const makeDemoSeatMap = (showtime: Showtime): SeatMap => ({
         id: `40000000-0000-4000-${rowLabel.charCodeAt(0)}00-${String(number).padStart(12, "0")}`,
         rowLabel,
         number,
-        seatType: rowLabel === "E" ? "RECLINER" : rowLabel === "D" ? "PREMIUM" : "STANDARD",
+        seatType:
+          rowLabel === "E"
+            ? "RECLINER"
+            : rowLabel === "D"
+              ? "PREMIUM"
+              : "STANDARD",
         status: seatStatus(rowLabel, number),
       };
     }),

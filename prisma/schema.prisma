@@ -43,6 +43,14 @@ enum PaymentMethod {
   WALLET
 }
 
+enum PaymentEventStatus {
+  RECEIVED
+  PROCESSED
+  REFUND_REQUIRED
+  REJECTED
+  DEAD_LETTER
+}
+
 model User {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email        String    @unique @db.VarChar(320)
@@ -155,6 +163,7 @@ model Booking {
   heldSeats      ShowtimeSeat[] @relation("ReservedShowtimeSeats")
   seatHolds      SeatHold[]
   payments       Payment[]
+  paymentEvents  PaymentEvent[]
 
   @@unique([userId, idempotencyKey])
   @@index([status, expiresAt])
@@ -201,5 +210,27 @@ model Payment {
   updatedAt      DateTime      @default(now()) @updatedAt
   booking        Booking       @relation(fields: [bookingId], references: [id], onDelete: Restrict)
 
+  @@index([bookingId])
+}
+
+model PaymentEvent {
+  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  providerEventId String             @unique @db.VarChar(255)
+  providerRef     String             @db.VarChar(255)
+  bookingId       String             @db.Uuid
+  payload         Json
+  payloadHash     String
+  status          PaymentEventStatus @default(RECEIVED)
+  deliveryCount   Int                @default(1)
+  attempts        Int                @default(0)
+  nextAttemptAt   DateTime           @default(now())
+  lastError       String?
+  receivedAt      DateTime           @default(now())
+  processedAt     DateTime?
+  manualOnly      Boolean            @default(false)
+  labScenario     String?            @db.VarChar(30)
+  booking         Booking            @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  @@index([status, manualOnly, nextAttemptAt])
   @@index([bookingId])
 }

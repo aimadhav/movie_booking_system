@@ -10,8 +10,11 @@ import type {
   Showtime,
   User,
 } from "./types";
+import type { PaymentLabRun, PaymentLabScenario } from "./payment-lab-types";
 
-const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:3000").replace(/\/$/, "");
+const apiBaseUrl = (
+  process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:3000"
+).replace(/\/$/, "");
 
 export class CinemaApiError extends Error {
   constructor(
@@ -25,19 +28,32 @@ export class CinemaApiError extends Error {
 
 const request = async <Result>(
   path: string,
-  options: RequestInit & { token?: string; idempotencyKey?: string } = {},
+  options: RequestInit & {
+    token?: string;
+    idempotencyKey?: string;
+    timeoutMs?: number;
+  } = {},
 ): Promise<Result> => {
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 4_500);
+  const timeout = window.setTimeout(
+    () => controller.abort(),
+    options.timeoutMs ?? 4_500,
+  );
   const headers = new Headers(options.headers);
   headers.set("Accept", "application/json");
   if (options.body) headers.set("Content-Type", "application/json");
   if (options.token) headers.set("Authorization", `Bearer ${options.token}`);
-  if (options.idempotencyKey) headers.set("Idempotency-Key", options.idempotencyKey);
+  if (options.idempotencyKey)
+    headers.set("Idempotency-Key", options.idempotencyKey);
 
   try {
-    const response = await fetch(`${apiBaseUrl}${path}`, { ...options, headers, signal: controller.signal });
-    const body = (await response.json().catch(() => ({}))) as Result & ApiErrorBody;
+    const response = await fetch(`${apiBaseUrl}${path}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+    const body = (await response.json().catch(() => ({}))) as Result &
+      ApiErrorBody;
     if (!response.ok) {
       throw new CinemaApiError(
         body.error?.message ?? `Request failed with status ${response.status}.`,
@@ -48,10 +64,37 @@ const request = async <Result>(
     return body;
   } catch (error) {
     if (error instanceof CinemaApiError) throw error;
-    throw new CinemaApiError("The local booking API is unavailable.", 0, "API_UNAVAILABLE");
+    throw new CinemaApiError(
+      "The local booking API is unavailable.",
+      0,
+      "API_UNAVAILABLE",
+    );
   } finally {
     window.clearTimeout(timeout);
   }
+};
+
+export const paymentLabApi = {
+  create(token: string, scenario: PaymentLabScenario) {
+    return request<PaymentLabRun>("/payments/lab/runs", {
+      method: "POST",
+      token,
+      timeoutMs: 30_000,
+      body: JSON.stringify({ scenario }),
+    });
+  },
+  read(token: string, runId: string) {
+    return request<PaymentLabRun>(
+      `/payments/lab/runs/${encodeURIComponent(runId)}`,
+      { token, timeoutMs: 15_000 },
+    );
+  },
+  resume(token: string, runId: string) {
+    return request<PaymentLabRun>(
+      `/payments/lab/runs/${encodeURIComponent(runId)}/resume`,
+      { method: "POST", token, timeoutMs: 30_000 },
+    );
+  },
 };
 
 export const cinemaApi = {
@@ -66,7 +109,11 @@ export const cinemaApi = {
   },
 
   showtimes(movieId?: string) {
-    const query = new URLSearchParams({ page: "1", pageSize: "100", city: "Bengaluru" });
+    const query = new URLSearchParams({
+      page: "1",
+      pageSize: "100",
+      city: "Bengaluru",
+    });
     if (movieId) query.set("movieId", movieId);
     return request<PageResult<Showtime>>(`/showtimes?${query}`);
   },
@@ -97,7 +144,12 @@ export const cinemaApi = {
     return request<{ items: Booking[] }>("/bookings/me", { token });
   },
 
-  reserve(token: string, showtimeId: string, seatIds: string[], idempotencyKey = crypto.randomUUID()) {
+  reserve(
+    token: string,
+    showtimeId: string,
+    seatIds: string[],
+    idempotencyKey = crypto.randomUUID(),
+  ) {
     return request<Booking>("/bookings/reserve", {
       method: "POST",
       token,
@@ -129,30 +181,51 @@ export const cinemaApi = {
   },
 
   cancel(token: string, bookingId: string) {
-    return request<Booking>(`/bookings/${bookingId}/cancel`, { method: "POST", token });
+    return request<Booking>(`/bookings/${bookingId}/cancel`, {
+      method: "POST",
+      token,
+    });
   },
 
   createMovie(
     token: string,
-    input: { title: string; description: string; durationMin: number; rating: string },
+    input: {
+      title: string;
+      description: string;
+      durationMin: number;
+      rating: string;
+    },
   ) {
-    return request<Movie>("/admin/movies", { method: "POST", token, body: JSON.stringify(input) });
-  },
-
-  createTheater(token: string, input: { name: string; city: string; address: string }) {
-    return request<{ id: string; name: string; city: string; address: string }>("/admin/theaters", {
+    return request<Movie>("/admin/movies", {
       method: "POST",
       token,
       body: JSON.stringify(input),
     });
+  },
+
+  createTheater(
+    token: string,
+    input: { name: string; city: string; address: string },
+  ) {
+    return request<{ id: string; name: string; city: string; address: string }>(
+      "/admin/theaters",
+      {
+        method: "POST",
+        token,
+        body: JSON.stringify(input),
+      },
+    );
   },
 
   createScreen(token: string, input: { theaterId: string; name: string }) {
-    return request<{ id: string; name: string; theaterId: string }>("/admin/screens", {
-      method: "POST",
-      token,
-      body: JSON.stringify(input),
-    });
+    return request<{ id: string; name: string; theaterId: string }>(
+      "/admin/screens",
+      {
+        method: "POST",
+        token,
+        body: JSON.stringify(input),
+      },
+    );
   },
 
   addSeats(token: string, screenId: string, rows: number, seatsPerRow: number) {
@@ -172,7 +245,12 @@ export const cinemaApi = {
 
   createShowtime(
     token: string,
-    input: { movieId: string; screenId: string; startsAt: string; priceCents: number },
+    input: {
+      movieId: string;
+      screenId: string;
+      startsAt: string;
+      priceCents: number;
+    },
   ) {
     return request<Showtime>("/admin/showtimes", {
       method: "POST",

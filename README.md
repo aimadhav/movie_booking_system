@@ -10,6 +10,10 @@ The API, PostgreSQL migration, seed data, expiry worker, unit tests, concurrency
 
 Concept explainers live in [docs/concepts](docs/concepts), and recruiter interview notes live in [docs/interview](docs/interview).
 
+The concurrency suite tests 25 competing HTTP clients, idempotent retries, overlapping seat groups, and payment/expiry boundaries. The payment reliability lab adds a signed PostgreSQL event inbox and an interactive `/payment-lab` screen for duplicate deliveries, interrupted processing, and late success. It records compensation requirements; it does not issue real refunds. PostgreSQL remains the source of truth for inventory and payment recovery.
+
+The frontend includes a cinematic movie catalogue, featured-film carousel, search and genre filters, theater selection, date-based showtimes, reserved-seat checkout, and a ticket wallet. The payment lab supports live database experiments and an explicitly labelled offline walkthrough.
+
 ### Key Concepts Demonstrated
 
 - 🔒 ACID Transactions
@@ -437,7 +441,7 @@ The frontend demonstrates movie discovery, showtimes, live seat status, expiring
 # Future Improvements
 
 - Real Payment Gateway Integration
-- Redis Distributed Locking
+- Optional Redis catalogue caching/shared rate limiting, when justified by measurements
 - WebSocket Seat Updates
 - Email Notifications
 - Ticket QR Codes

@@ -12,6 +12,8 @@ const schema = z.object({
   JWT_SECRET: z.string().min(32),
   RESERVATION_TTL_MINUTES: z.coerce.number().int().positive().max(30).default(10),
   WORKER_INTERVAL_MS: z.coerce.number().int().positive().default(60_000),
+  PAYMENT_WEBHOOK_SECRET: z.string().min(32).optional(),
+  ENABLE_PAYMENT_LAB: z.enum(["true", "false"]).default("true").transform((value) => value === "true"),
 });
 
 export const env = schema.parse(process.env);

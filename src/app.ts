@@ -8,6 +8,8 @@ import { catalogRouter } from "./modules/catalog/catalog.routes.js";
 import { paymentRouter } from "./modules/payments/payment.routes.js";
 import { showtimeRouter } from "./modules/showtimes/showtime.routes.js";
 import { adminRouter } from "./modules/admin/admin.routes.js";
+import { paymentWebhookRouter } from "./modules/payments/payment-webhooks.routes.js";
+import { paymentLabRouter } from "./modules/payments/payment-lab.routes.js";
 import { errorHandler, notFound } from "./middleware/error-handler.js";
 
 export const app = express();
@@ -19,7 +21,7 @@ const requestLogger = pinoHttp as unknown as (options: {
 app.use(requestLogger({
   genReqId: (req) => req.headers["x-request-id"]?.toString(),
   redact: {
-    paths: ["req.headers.authorization", "req.headers.cookie"],
+    paths: ["req.headers.authorization", "req.headers.cookie", 'req.headers["x-mock-signature"]'],
     censor: "[REDACTED]",
   },
 }));
@@ -35,7 +37,9 @@ app.use((req, res, next) => {
   if (req.method === "OPTIONS") return res.sendStatus(204);
   return next();
 });
+app.use("/payments/webhooks", paymentWebhookRouter);
 app.use(express.json({ limit: "100kb" }));
+app.use("/payments/lab", paymentLabRouter);
 
 app.get("/health", (_req, res) => res.status(200).json({ status: "ok" }));
 app.use("/auth", authRouter);
